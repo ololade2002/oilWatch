@@ -1,0 +1,8 @@
+# Ignore the environment variable configuration file (CRITICAL for security)
+.env
+
+# Ignore virtual environments folders (keeps your repo lightweight)
+venv/
+.venv/
+env/
+certs/
