@@ -13,14 +13,14 @@ PATH_TO_CERT = "backend/certs/certificate.pem.crt"
 PATH_TO_PRIVATE_KEY = "backend/certs/private.pem.key"   
 
 # 2. INITIALIZE AND CONFIGURE THE MQTT CLIENT
-print("🔄 Connecting to AWS IoT Core Ingestion Engine...")
+print("Connecting to AWS IoT Core Ingestion Engine...")
 mqtt_client = AWSIoTMQTTClient(CLIENT_ID)
 mqtt_client.configureEndpoint(ENDPOINT, 8883)
 mqtt_client.configureCredentials(PATH_TO_ROOT_CA, PATH_TO_PRIVATE_KEY, PATH_TO_CERT)
 
 # Establish connection
 mqtt_client.connect()
-print("✅ Secure Connection Established!")
+print("Secure Connection Established!")
 
 # 3. REAL-TIME SIMULATION LOOP
 try:
@@ -46,11 +46,11 @@ try:
         # Publish the data payload to AWS IoT Core
         mqtt_client.publish(topic, json.dumps(payload), 1)
         
-        print(f"📡 Broadcast Sent to {topic}: Pressure = {payload['metrics']['wellhead_pressure_psi']} PSI")
+        print(f"Broadcast Sent to {topic}: Pressure = {payload['metrics']['wellhead_pressure_psi']} PSI")
         
         # Stream data interval (10 seconds)
         time.sleep(10)
 
 except KeyboardInterrupt:
-    print("\n🛑 Simulator stopped manually.")
+    print("\n Simulator stopped manually.")
     mqtt_client.disconnect()
