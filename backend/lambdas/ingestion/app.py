@@ -1,7 +1,8 @@
 import json
 import boto3
 import os
-from decimal import Decimal # Added this import
+from decimal import Decimal 
+from datetime import datetime
 
 # Setting up DB Connection
 dynamodb = boto3.resource('dynamodb')
@@ -16,15 +17,18 @@ def ingest_handler(event, context):
         asset_id = event.get("asset_id")
         telemetry_type = event.get("telemetry_type")
         metrics = event.get("metrics")
-        timestamp = event.get("timestamp")
+        raw_timestamp = event.get("timestamp")
 
         # Validation
-        if not asset_id or not metrics or not timestamp:
+        if not asset_id or not metrics or not raw_timestamp:
              print(f"Validation failed: Missing critical payload fields.")
              return {
                  "statusCode": 400,
                  "body": json.dumps('Incomplete telemetry structure.')
              }
+
+        # Convert raw Unix digits to human-readable date
+        timestamp = datetime.fromtimestamp(int(raw_timestamp)).strftime('%Y-%m-%d %H:%M:%S')
 
         # Building single table design
         if telemetry_type == "wellhead":

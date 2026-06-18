@@ -22,33 +22,94 @@ mqtt_client.configureCredentials(PATH_TO_ROOT_CA, PATH_TO_PRIVATE_KEY, PATH_TO_C
 mqtt_client.connect()
 print("Secure Connection Established!")
 
-# 3. REAL-TIME SIMULATION LOOP
+# 3. REAL-TIME MULTI-ASSET SIMULATION LOOP
+# Tailored limits for upstream wells and downstream processing assets
+assets_config = [
+    {
+        "id": "ALPHA_1",
+        "type": "wellhead",
+        "limits": {"press": (1350.0, 1450.0), "flow": (470.0, 500.0), "temp": (78.0, 82.0)}
+    },
+    {
+        "id": "ALPHA_2",
+        "type": "wellhead",
+        "limits": {"press": (1000.0, 1150.0), "flow": (200.0, 300.0), "temp": (70.0, 75.0)} # Aging indicators
+    },
+    {
+        "id": "ALPHA_3",
+        "type": "wellhead",
+        "limits": {"press": (1200.0, 1650.0), "flow": (300.0, 600.0), "temp": (72.0, 88.0)} # Volatile / high pressure
+    },
+    {
+        "id": "MANIFOLD_ALPHA",
+        "type": "facility",
+        "limits": {"press": (900.0, 1100.0), "flow": (970.0, 1400.0), "temp": (65.0, 70.0)}
+    },
+    {
+        "id": "SEPARATOR_ALPHA",
+        "type": "facility",
+        "limits": {"press": (150.0, 250.0), "flow": (0.0, 0.0), "temp": (45.0, 55.0)}
+    }
+]
+
+print("OilWatch Digital Oilfield Simulation Active. Broadcasting telemetry...")
+
 try:
     while True:
-        # Generate current Unix timestamp
         current_timestamp = str(int(time.time()))
         
-        # Structure the industrial JSON payload
-        payload = {
-            "asset_id": "WELL_01_ALPHA",
-            "timestamp": current_timestamp,
-            "telemetry_type": "wellhead",
-            "metrics": {
-                "wellhead_pressure_psi": round(random.uniform(1200.0, 1500.0), 2),
-                "flow_rate_bbl_day": round(random.uniform(450.0, 500.0), 2),
-                "temperature_c": round(random.uniform(75.0, 85.0), 2)
+        # Cycle through all configured field assets in a single operational scan
+        for asset in assets_config:
+            asset_id = asset["id"]
+            telemetry_type = asset["type"]
+            limits = asset["limits"]
+            
+            # Map parameters dynamically based on asset type definitions
+            if asset_id == "SEPARATOR_ALPHA":
+                metrics = {
+                    "vessel_pressure_psi": round(random.uniform(limits["press"][0], limits["press"][1]), 2),
+                    "bulk_oil_bbl_day": round(random.uniform(800.0, 1100.0), 2),
+                    "produced_water_bbl_day": round(random.uniform(300.0, 500.0), 2),
+                    "associated_gas_mscf_day": round(random.uniform(1500.0, 2200.0), 2),
+                    "temperature_c": round(random.uniform(limits["temp"][0], limits["temp"][1]), 2)
+                }
+            elif asset_id == "MANIFOLD_ALPHA":
+                metrics = {
+                    "manifold_pressure_psi": round(random.uniform(limits["press"][0], limits["press"][1]), 2),
+                    "total_combined_flow_bbl_day": round(random.uniform(limits["flow"][0], limits["flow"][1]), 2),
+                    "temperature_c": round(random.uniform(limits["temp"][0], limits["temp"][1]), 2)
+                }
+            else:
+                # Upstream wellhead structural maps
+                metrics = {
+                    "wellhead_pressure_psi": round(random.uniform(limits["press"][0], limits["press"][1]), 2),
+                    "flow_rate_bbl_day": round(random.uniform(limits["flow"][0], limits["flow"][1]), 2),
+                    "temperature_c": round(random.uniform(limits["temp"][0], limits["temp"][1]), 2)
+                }
+                
+                # Injected feature anomaly mapping for mature well testing
+                if asset_id == "ALPHA_2":
+                    metrics["water_cut_percentage"] = round(random.uniform(65.0, 85.0), 2)
+            
+            # Structure standard unified telemetry message package
+            payload = {
+                "asset_id": asset_id,
+                "timestamp": current_timestamp,
+                "telemetry_type": telemetry_type,
+                "metrics": metrics
             }
-        }
-        
-        # Set the dynamic topic path (Pre-fixed with Thing Name to match IoT Policy)
-        topic = f"oilwatch/telemetry/wellhead"
-        
-        # Publish the data payload to AWS IoT Core
-        mqtt_client.publish(topic, json.dumps(payload), 1)
-        
-        print(f"Broadcast Sent to {topic}: Pressure = {payload['metrics']['wellhead_pressure_psi']} PSI")
-        
-        # Stream data interval (10 seconds)
+            
+            # Publish payload dynamically to specific topic endpoints
+            topic = f"oilwatch/telemetry/{telemetry_type}"
+            mqtt_client.publish(topic, json.dumps(payload), 1)
+            
+            print(f"Broadcast Sent to {topic} for {asset_id}")
+            
+            # Small pace brief spacing to prevent package collision over mTLS network
+            time.sleep(0.5)
+            
+        print("--- Complete Field Scan Saved to Cloud ---")
+        # Rest interval duration between operational loop cycles (10 seconds)
         time.sleep(10)
 
 except KeyboardInterrupt:
