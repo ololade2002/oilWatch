@@ -1,8 +1,21 @@
-# Ignore the environment variable configuration file (CRITICAL for security)
-.env
 
 # Ignore virtual environments folders (keeps your repo lightweight)
 venv/
 .venv/
 env/
 certs/
+
+# Dependencies
+node_modules/
+dist/
+build/
+
+# Local Environment Credentials
+.env
+.env.local
+.env.production
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
