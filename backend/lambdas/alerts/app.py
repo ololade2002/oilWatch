@@ -57,7 +57,7 @@ def alerts_handler(event, context):
                         is_breached = True
                         severity = "Critical"
                         message = "CRITICAL: Wellhead pressure breached safety ceiling — check downstream valve loops on Manifold Alpha."
-                    elif current_value > 1350.0:  # Pre-ceiling warning zone
+                    elif current_value > 1450.0:  # Pre-ceiling warning zone
                         is_breached = True
                         severity = "Warning"
                         message = "WARNING: Wellhead pressure trending high. Monitor closely."
@@ -69,7 +69,7 @@ def alerts_handler(event, context):
                         is_breached = True
                         severity = "Critical"
                         message = "CRITICAL: Manifold pressure exceeds gathering system limits — adjust pressure control regulator."
-                    elif current_value > 1300.0:
+                    elif current_value > 1400.0:
                         is_breached = True
                         severity = "Warning"
                         message = "WARNING: Manifold pressure approaching high operating boundaries."
@@ -81,7 +81,7 @@ def alerts_handler(event, context):
                         is_breached = True
                         severity = "Critical"
                         message = "CRITICAL: Separator pressure approaching high operating limit — verify gas flare line valve alignment."
-                    elif current_value > 1250.0:
+                    elif current_value > 1350.0:
                         is_breached = True
                         severity = "Warning"
                         message = "WARNING: Vessel pressure building up. Inspect vent outputs."

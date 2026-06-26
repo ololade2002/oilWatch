@@ -33,7 +33,7 @@ export default function Dashboard() {
           
           if (key === "ALPHA_1") {
             if (res.lastSeen === lastDatabaseTimestamp) {
-              isDbStatic = true; // The timestamp didn't change! Simulator is off.
+              isDbStatic = true; 
             }
             lastDatabaseTimestamp = res.lastSeen;
           }
@@ -97,7 +97,7 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="p-6 text-amber font-mono text-sm animate-pulse tracking-widest">
+      <div className="p-6 text-amber font-mono text-[12px] animate-pulse tracking-widest">
         SYNCHRONIZING DIGITAL TWIN SCADA LAYERS...
       </div>
     );

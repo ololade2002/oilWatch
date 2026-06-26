@@ -17,19 +17,19 @@ const HomePage = ({ engineerName = "Engineer" }) => {
         <h1 className="text-xl md:text-2xl font-bold tracking-widest text-white uppercase animate-fade-in">
           Welcome back, {engineerName}
         </h1>
-        <p className="text-[12px] text-[#8ea2bc] font-rajdhani mt-1">
+        <p className="text-[12px] text-[#8ea2bc] font-raleway mt-1">
           Authorized Terminal Session Active • Base Location: Lagos Hub
         </p>
       </div>
 
       <div className="text-center mb-16 space-y-2">
-        <p className="text-[10px] font-bold tracking-[0.3em] text-text3 uppercase">
+        <p className="text-[10px]  font-bold tracking-[0.3em] text-text3 uppercase">
           Digital Oilfield Surveillance System V2.0
         </p>
         <h2 className="text-4xl md:text-5xl font-black tracking-widest text-white">
           FACILITY <span className="text-amber drop-shadow-[0_0_15px_rgba(52,211,153,0.3)]">ALPHA</span>
         </h2>
-        <p className="text-xs font-medium tracking-widest text-text2 uppercase pt-2">
+        <p className="text-xs font-medium  tracking-widest text-text2 uppercase pt-2">
           Onshore Production • 5 Active Assets • Real-Time Monitoring
         </p>
       </div>
@@ -63,7 +63,7 @@ const HomePage = ({ engineerName = "Engineer" }) => {
               <p className="text-xl font-extrabold text-slate-100 tracking-tight">
                 {asset.value}
               </p>
-              <p className="text-[9px] font-bold text-text3 uppercase mt-0.5">
+              <p className="text-[12px] font-bold text-text3 uppercase mt-0.5">
                 {asset.type}
               </p>
             </div>
