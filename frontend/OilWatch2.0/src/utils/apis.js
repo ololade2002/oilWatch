@@ -30,3 +30,17 @@ export const fetchActiveAlerts = async () => {
     throw error;
   }
 };
+
+export async function fetchProductionForecast(assetId = "ALPHA_2") {
+  const response = await fetch(
+    `${import.meta.env.VITE_API_URL}/forecast?asset_id=${assetId}`
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch production forecast");
+  }
+
+  const data = await response.json();
+
+  return data;
+}

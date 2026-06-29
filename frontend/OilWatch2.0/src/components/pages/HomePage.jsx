@@ -11,8 +11,7 @@ const assetsSnapshot = [
 const HomePage = ({ engineerName = "Engineer" }) => {
   return (
     <div className=" bg-bgPrimary pt-24 lg:pt-4 text-text1 font-orbitron px-4 md:px-12 py-6 flex flex-col items-center">
-      
-  
+        
       <div className="w-full max-w-6xl text-left  mb-12 border-l-4 border-amber pl-4">
         <h1 className="text-xl md:text-2xl font-bold tracking-widest text-white uppercase animate-fade-in">
           Welcome back, {engineerName}

@@ -159,7 +159,7 @@ export default function Alerts() {
             className={`flex justify-between items-start p-4 border rounded-md transition-all duration-150 hover:bg-slate-900/20 ${rowBorderClass}`}>
             <div className="flex flex-col gap-1">
               <h4 className="font-bold font-orbitron tracking-wider  text-sm text-slate-100 uppercase">{assetName}</h4>
-              <p className="text-xs text-slate-400">{alert.message}</p>
+              <p className="text-xs font-raleway text-slate-400">{alert.message}</p>
               <div className={`flex items-baseline gap-1.5 mt-1 font-mono text-xs ${valueTextClass}`}>
                 <span className="font-bold">{cleanNumericValue.toLocaleString(undefined, { maximumFractionDigits: 2 })} {unitStr}</span>
                 {ceilingVal && <span className="text-slate-600">[ceiling {ceilingVal}]</span>}

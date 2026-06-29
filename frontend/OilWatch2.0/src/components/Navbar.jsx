@@ -39,7 +39,7 @@ export default function Navbar() {
 
             <div className="flex items-center gap-2">
               <div className="flex flex-row gap-2">
-                <h2 className="text-text2 font-mono text-[13px]">SYNCED</h2>
+                <h2 className="text-text2 font-mono  text-[13px]">SYNCED</h2>
                 <LiveClock />
               </div>
             </div>
