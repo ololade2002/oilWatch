@@ -19,17 +19,20 @@ export const fetchTelemetryHistory = async (assetId) => {
  * Fetches the active system anomaly tracking list from the alerts database
  */
 export const fetchActiveAlerts = async () => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/alerts`);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    return await response.json();
-  } catch (error) {
-    console.error("Error pulling active alert stream:", error);
-    throw error;
+  const response = await fetch(`${import.meta.env.VITE_API_URL}/alerts`);
+ 
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
   }
+ 
+  const data = await response.json();
+  if (Array.isArray(data)) return data;
+  if (typeof data === "string") return JSON.parse(data);
+  if (data.body) return JSON.parse(data.body);
+ 
+  return [];
 };
+ 
 
 export async function fetchProductionForecast(assetId = "ALPHA_2") {
   const response = await fetch(

@@ -74,15 +74,28 @@ export default function Forecast({ assetId = "ALPHA_2" }) {
   const chartData = prepareChartData();
 
   return (
-    <div className="p-6 bg-bgPrimary pt-24 lg:pt-4 text-slate-100 rounded-lg border border-slate-800">
-      <div className="flex flex-col lg:flex-row gap-4 justify-between items-start ">
+    <div className="p-2 sm:p-6 bg-bgPrimary pt-24 sm:pt-24 lg:pt-4 text-slate-100 rounded-lg border border-slate-800">
+      <div className="flex flex-col lg:flex-row gap-5 justify-between items-start ">
         <div>
           <h2 className="text-[22px] font-orbitron font-bold">
             WELL {assetId}
           </h2>
 
-          <p className="text-[15px] font-mono text-slate-500 mt-1">
-            Predictive Decline Analysis · 50-day Arps Decline Forecast
+          <p className="text-[13px] md:text-[14px] font-mono text-slate-500 mt-1">
+            Production Forecast Analysis ·{" "}
+            {forecastData?.summary?.history_points_used ?? "—"} readings fitted
+            ·
+            <span
+              className={
+                forecastData?.trend_direction === "declining"
+                  ? "text-red-400"
+                  : "text-emerald-400"
+              }
+            >
+              {" "}
+              {forecastData?.summary?.decline_pct ?? "—"}% projected decline
+            </span>{" "}
+            over 50 days · Arps Hyperbolic b=0.5
           </p>
         </div>
 
@@ -90,7 +103,7 @@ export default function Forecast({ assetId = "ALPHA_2" }) {
           onClick={handleGenerateForecast}
           disabled={isLoading}
           className={`
-            px-6 py-3 rounded text-[13px] tracking-wider font-bold font-mono uppercase transition
+            px-3 sm:px-6 py-3 rounded text-[13px] tracking-wider font-bold font-mono uppercase transition
             ${
               isLoading
                 ? "bg-slate-700 text-slate-400 cursor-not-allowed"
@@ -106,14 +119,14 @@ export default function Forecast({ assetId = "ALPHA_2" }) {
         </button>
       </div>
 
-      <div className="flex gap-5 pt-8 lg:pt-3 pb-9 text-[13px]">
+      <div className=" space-x-2.5  pt-8 pb-4 sm:pl-14 text-[13px]">
         <span className="text-slate-500 font-medium font-mono">
           ━━ Historical production
         </span>
 
         {hasGenerated && (
           <span className="text-amber font-mono font-medium">
-            ╌╌ Forecast (Arps)
+            ╌╌ Forecast (Arps Model)
           </span>
         )}
       </div>
@@ -133,7 +146,15 @@ export default function Forecast({ assetId = "ALPHA_2" }) {
 
         {hasGenerated && (
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
+            <LineChart
+              data={chartData}
+              margin={{
+                top: 20,
+                right: 20,
+                left: 0,
+                bottom: 20,
+              }}
+            >
               <CartesianGrid vertical={false} horizontal={true} />
 
               <XAxis
@@ -160,6 +181,7 @@ export default function Forecast({ assetId = "ALPHA_2" }) {
                   stroke: "#fff",
                 }}
                 tickLine={false}
+                width={45}
               />
 
               <Tooltip

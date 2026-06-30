@@ -104,7 +104,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="px-4  pt-24 lg:pt-4 min-h-screen bg-bgPrimary text-[#cbd5e1] font-sans selection:bg-amber-500/30">
+    <div className="px-2 pt-24 lg:pt-4 min-h-screen bg-bgPrimary text-[#cbd5e1] font-sans selection:bg-amber-500/30">
       
       {/* UPSTREAM WELLHEAD GRID ROW */}
       <div className="mb-4 text-[14px] font-semibold text-text2 font-rajdhani uppercase tracking-widest  border-b border-slate-900 pb-1">

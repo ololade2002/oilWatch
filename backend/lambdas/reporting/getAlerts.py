@@ -58,7 +58,7 @@ def getAlerts_handler(event, context):
         for alert in latest_alerts:
             formatted_alerts.append({
                 "id": alert.get("alert_id"),
-                "asset": alert.get("asset_id"),
+                "asset_id": alert.get("asset_id"),
                 "severity": alert.get("severity"),
                 "message": alert.get("message"),
                 "timestamp": alert.get("timestamp"),

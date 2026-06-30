@@ -128,7 +128,7 @@ export default function AssetCard({ config, data }) {
     <div className={`p-5 rounded-md border transition-all duration-300 relative ${cardBorderClass}`}>
       <div className={`absolute top-0 left-0 right-0 h-px rounded-b-md transition-colors duration-300 ${accentLineClass}`} />
 
-      <div className="flex justify-between items-start">
+      <div className="flex-col mdd:flex-col justify-between items-start">
         <div>
           <h3 className="font-bold font-orbitron text-[18px] text-text tracking-wide uppercase">
             {config.name}

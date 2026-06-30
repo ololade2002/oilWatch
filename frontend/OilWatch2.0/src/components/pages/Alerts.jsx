@@ -18,20 +18,15 @@ export default function Alerts() {
         if (isInitialLoad) {
           setLoading(true);
         }
-        
+
         const data = await fetchActiveAlerts();
-        
+
         if (isMounted) {
-          const rawList = data || [];
-          
-          // Sort chronologically ascending so that newer logs are always pushed to the end
-          const sortedList = [...rawList].sort((a, b) => {
-            return new Date(a.timestamp || 0) - new Date(b.timestamp || 0);
-          });
-          
-          // Slice the last 20 entries (the newest ones) and reverse them so the freshest is at the top
-          const recentAlerts = sortedList.slice(-20).reverse();
-          
+          const rawList = Array.isArray(data) ? data : [];
+
+          // Lambda already returns newest-first sorted — just take the top 20
+          const recentAlerts = rawList.slice(0, 20);
+
           setAlertsData(recentAlerts);
           setError(null);
         }
@@ -83,10 +78,10 @@ export default function Alerts() {
   });
 
   return (
-    <div className="px-4  pt-24 lg:pt-4 flex flex-col gap-3.5 w-full bg-bgPrimary rounded-lg">
+    <div className="px-2  pt-24 lg:pt-4 flex flex-col gap-3.5 w-full bg-bgPrimary rounded-lg">
 
       {/* Interactive Tabs Header Controls */}
-      <div className="flex justify-between items-center mb-1 font-mono text-[11px] tracking-wider text-slate-400">
+      <div className="flex flex-col md:flex-row gap-1 pb-3 justify-between md:items-center mb-1 font-mono text-[11px] tracking-wider text-slate-400">
         <div className="uppercase text-text2 font-rajdhani text-[14px] font-semibold tracking-widest ">ACTIVE ALERTS — {filteredAlerts.length} SHOWN</div>
         
         {/* Navigation Badges Switchers */}
@@ -156,9 +151,9 @@ export default function Alerts() {
         return (
           <div 
             key={`${alert.alert_id || alert.id || idx}-${cleanNumericValue}-${idx}`} 
-            className={`flex justify-between items-start p-4 border rounded-md transition-all duration-150 hover:bg-slate-900/20 ${rowBorderClass}`}>
+            className={`flex flex-col md:flex-row  justify-between items-start p-2 sm:p-4 border rounded-md transition-all duration-150 hover:bg-slate-900/20 ${rowBorderClass}`}>
             <div className="flex flex-col gap-1">
-              <h4 className="font-bold font-orbitron tracking-wider  text-sm text-slate-100 uppercase">{assetName}</h4>
+              <h4 className="font-bold font-orbitron tracking-wider text-sm text-slate-100 uppercase">{assetName}</h4>
               <p className="text-xs font-raleway text-slate-400">{alert.message}</p>
               <div className={`flex items-baseline gap-1.5 mt-1 font-mono text-xs ${valueTextClass}`}>
                 <span className="font-bold">{cleanNumericValue.toLocaleString(undefined, { maximumFractionDigits: 2 })} {unitStr}</span>

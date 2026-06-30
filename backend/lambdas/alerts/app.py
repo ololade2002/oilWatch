@@ -108,7 +108,7 @@ def alerts_handler(event, context):
                     print(f"{severity.upper()} VIOLATION detected for {asset_id}!")
 
                     # Check DynamoDB if this asset already has an active alert to prevent spamming emails
-                    already_notified = False
+                    already_notified = True
                     try:
                         # Scan the table for any existing active alerts for this specific asset
                         response = alerts_table.scan(

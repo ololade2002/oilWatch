@@ -12,7 +12,7 @@ export default function Navbar() {
   return (
     <div className="">
       <header className="absolute inset-x-0 top-0 z-50 bg-bgPrimary">
-        <nav aria-label="Global" className="flex items-center justify-between p-4 lg:px-6">
+        <nav aria-label="Global" className="flex items-center justify-between py-4 px-2 lg:px-6">
           <Link to="/" className="flex flex-row gap-1.5 items-center">
             <OilWatchLogo />
             <div className="flex flex-col uppercase">
