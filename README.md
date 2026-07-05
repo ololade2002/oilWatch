@@ -2,17 +2,16 @@
 
 A serverless, event-driven IoT monitoring platform built on AWS for real-time oilfield telemetry ingestion, anomaly detection, and automated alerting.
 
----
 
 ##  Overview
 
 OilWatch v2.0 simulates how a modern oil and gas production facility monitors asset health using a serverless, event-driven architecture on AWS. It ingests live sensor telemetry from **Facility Alpha**—a simulated five-asset onshore production facility—stores production data, continuously evaluates readings against engineering thresholds, generates real-time alerts for abnormal conditions, and provides on-demand production forecasting using the Arps Hyperbolic Decline Curve model. Unlike traditional systems that rely on manual monitoring or scheduled jobs, OilWatch processes telemetry as it arrives, enabling real-time monitoring and automated decision-making.
 
----
 
 ## Live Demo
 
 Live Demo: https://d2fswpoy9ervv4.cloudfront.net
+
 
 ## Facility Alpha — Asset Profile
 
@@ -24,7 +23,6 @@ Live Demo: https://d2fswpoy9ervv4.cloudfront.net
 | Manifold-Alpha | Facility | `FACILITY#MANIFOLD_ALPHA` | Collects production from all three wells. |
 | Separator-Alpha | Facility | `FACILITY#SEPARATOR_ALPHA` | Three-phase separator for oil, gas, and water processing. |
 
----
 
 ## Problem Statement
 
@@ -37,8 +35,6 @@ Without automated monitoring:
 * production downtime becomes more expensive
 
 OilWatch addresses this by building an automated monitoring pipeline capable of ingesting telemetry, evaluating operational conditions, and notifying engineers in real time.
-
----
 
 
 ## Why Version 2.0?
@@ -76,10 +72,7 @@ The Alerts Lambda evaluates every new telemetry record against these thresholds,
 ### 3. Production Forecasting Layer
 OilWatch uses the Arps hyperbolic decline curve — the petroleum engineering industry standard for production rate forecasting. The Forecast Lambda queries historical data from the OilWatchTelemetry table to execute time-series analytics using the Arps Decline Curve Model.
 
-
 ![Architecture Diagram](./frontend/OilWatch2.0/docs/Architecture.png)
-
----
 
 
 ## Tech Stack
@@ -94,9 +87,6 @@ OilWatch uses the Arps hyperbolic decline curve — the petroleum engineering in
 - API Gateway
 
 
----
-
-
 ##  AWS Services Used
 
 | Service          | Purpose                        |
@@ -109,8 +99,6 @@ OilWatch uses the Arps hyperbolic decline curve — the petroleum engineering in
 | Amazon Cognito   | User authentication            |
 | IAM              | Access control and permissions |
 | CloudWatch       | Logs and monitoring            |
-
----
 
 
 ##  Interface Previews
@@ -128,9 +116,6 @@ OilWatch uses the Arps hyperbolic decline curve — the petroleum engineering in
 ![Forecast](./frontend/OilWatch2.0/docs/Forecast.png)
 
 
----
-
-
 ##  Features
 
 * Real-time telemetry ingestion
@@ -143,7 +128,6 @@ OilWatch uses the Arps hyperbolic decline curve — the petroleum engineering in
 * Fully serverless design
 * Production-style monitoring workflow
 
----
 
 ## Learning Objectives
 
@@ -160,7 +144,6 @@ This project demonstrates practical experience with:
 * Serverless application design
 * Real-time data processing
 
----
 
 ## Future Improvements
 
@@ -171,7 +154,6 @@ This project demonstrates practical experience with:
 * Infrastructure as Code using AWS CDK or Terraform
 * Integrate AWS Cognito for role-based access control (RBAC) 
 
----
 
 #  Author
 
