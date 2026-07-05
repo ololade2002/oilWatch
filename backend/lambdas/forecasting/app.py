@@ -77,7 +77,6 @@ def fetch_flow_history(asset_id: str):
 
 #  Arps hyperbolic decline curve fit 
 def fit_arps(history):
-
     if len(history) < 3:
         return None
 
@@ -86,53 +85,64 @@ def fit_arps(history):
 
     if qi <= 0 or q_previous <= 0:
         return None
+        
     b = 0.5
 
-    days_elapsed = len(history)
+    # 1. FIX: Calculate real calendar days instead of assuming 1 point = 1 day
+    try:
+        t_start = datetime.fromisoformat(history[0]["timestamp"].replace("Z", "+00:00"))
+        t_end = datetime.fromisoformat(history[-1]["timestamp"].replace("Z", "+00:00"))
+        days_between = (t_end - t_start).days
+        
+        # Ensure we have at least 1 day to prevent division by zero
+        days_elapsed = max(days_between, 1) 
+    except Exception:
+        # Fallback if timestamp parsing fails
+        days_elapsed = len(history)
+
     ratio = q_previous / qi
 
-    Di = (
-        ((ratio ** b) - 1)
-        /
-        (b * days_elapsed)
-    )
+    # If the well hasn't actually declined across this period, return a flat/low decline
+    if ratio <= 1:
+        return {
+            "qi": qi,
+            "Di": 0.0001, # Very minimal steady baseline decline
+            "b": b
+        }
 
+    # Arps nominal initial decline rate equation
+    Di = (((ratio ** b) - 1) / (b * days_elapsed))
+
+    # 2. FIX: Cap the daily decline rate to something realistic.
     Di = max(Di, 0.000001)
-
-    # realistic decline limit
-    Di = min(Di, 1.0)
-
-
+    Di = min(Di, 0.005) 
+    
     return {
         "qi": qi,
         "Di": Di,
         "b": b
     }
-   
 
 
 #  generate 180-day forecast 
-def generate_forecast(params: dict, days: int = FORECAST_DAYS):
-    """
-    Project production rate forward `days` days using fitted Arps params.
-    Returns one data point every 5 days (keeps the payload small).
-    """
-    qi, Di, b = params["qi"], params["Di"], params["b"]
-    forecast  = []
+def generate_forecast(params, days=180):
+
+    qi = params["qi"]
+    Di = params["Di"]
+    b = params["b"]
+
+    forecast = []
 
     for day in range(0, days + 1, 5):
-        try:
-            q_t = qi / ((1 + b * Di * day) ** (1 / b))
-        except (ZeroDivisionError, ValueError):
-            q_t = 0
+
+        rate = qi / ((1 + b * Di * day) ** (1 / b))
 
         forecast.append({
-            "day":      day,
-            "rate_bbl": round(max(q_t, 0), 2),
+            "day": day,
+            "rate_bbl": round(rate, 2)
         })
 
     return forecast
-
 
 #  save forecast run to OilWatchForecast table 
 def save_forecast(asset_id, params, forecast, current_rate, projected_rate):
@@ -200,10 +210,11 @@ def forecast_handler(event, context):
             }
 
         # 3. Generate forecast
-        forecast      = generate_forecast(arps)
-        current_rate  = points[-1]["rate"]
+        forecast = generate_forecast(arps, 180)
+        current_rate = arps["qi"]
         projected_rate = forecast[-1]["rate_bbl"]
-        decline_pct   = round(((current_rate - projected_rate) / current_rate) * 100, 1) if current_rate > 0 else 0
+        decline_pct = round(((current_rate - projected_rate) / current_rate) * 100,1)
+
 
         # 4. Save run
         save_forecast(asset_id, arps, forecast, current_rate, projected_rate)

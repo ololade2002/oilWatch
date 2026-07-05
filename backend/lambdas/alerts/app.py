@@ -3,194 +3,163 @@ import boto3
 import os
 import uuid
 from boto3.dynamodb.types import TypeDeserializer
-from boto3.dynamodb.conditions import Key
 
-# INITIALIZE AWS CLIENTS
-sns_client = boto3.client('sns')
-dynamodb = boto3.resource('dynamodb')
+sns_client    = boto3.client("sns")
+dynamodb      = boto3.resource("dynamodb")
 
-SNS_TOPIC_ARN = os.environ.get("ALERT_TOPIC_SNS") or ""
-ALERTS_TABLE = os.environ.get("ALERTS_TABLE") or "OilWatchAlertsTable"
-
-try:
-    alerts_table = dynamodb.Table(ALERTS_TABLE)
-except Exception as init_err:
-    print(f"Warning: Table initialization delayed: {str(init_err)}")
-
-deserializer = TypeDeserializer()
+SNS_TOPIC_ARN = os.environ.get("ALERT_TOPIC_SNS", "")
+ALERTS_TABLE  = os.environ.get("ALERTS_TABLE", "OilWatchAlertsTable")
+alerts_table  = dynamodb.Table(ALERTS_TABLE)
+deserializer  = TypeDeserializer()
 
 
 def deserialize_image(image):
     return {k: deserializer.deserialize(v) for k, v in image.items()}
 
 
+def evaluate_metrics(metrics: dict):
+    """
+    Evaluates all metrics independently.
+    Returns a list of tuples: [(severity, message, current_value, ceiling_value, unit), ...]
+    """
+    alerts = []
+
+    # 1. Wellhead Pressure Evaluation
+    if "wellhead_pressure_psi" in metrics:
+        val = float(metrics["wellhead_pressure_psi"])
+        if val > 1500.0:
+            alerts.append((
+                "Critical", 
+                "CRITICAL: Wellhead pressure breached safety ceiling — check downstream valve loops on Manifold Alpha.", 
+                val, 1500.0, "psi"
+            ))
+        elif val > 1450.0:
+            alerts.append((
+                "Warning", 
+                "WARNING: Wellhead pressure trending high. Monitor closely.", 
+                val, 1450.0, "psi"
+            ))
+
+    # 2. Manifold Pressure Evaluation (No longer blocked by elif)
+    if "manifold_pressure_psi" in metrics:
+        val = float(metrics["manifold_pressure_psi"])
+        if val > 1450.0:
+            alerts.append((
+                "Critical", 
+                "CRITICAL: Manifold pressure exceeds gathering system limits.", 
+                val, 1450.0, "psi"
+            ))
+        elif val > 1400.0:
+            alerts.append((
+                "Warning", 
+                "WARNING: Manifold pressure approaching high operating boundaries.", 
+                val, 1400.0, "psi"
+            ))
+
+    # 3. Vessel Pressure Evaluation (No longer blocked by elif)
+    if "vessel_pressure_psi" in metrics:
+        val = float(metrics["vessel_pressure_psi"])
+        if val > 1400.0:
+            alerts.append((
+                "Critical", 
+                "CRITICAL: Separator pressure approaching high operating limit.", 
+                val, 1400.0, "psi"
+            ))
+        elif val > 1350.0:
+            alerts.append((
+                "Warning", 
+                "WARNING: Vessel pressure building up. Inspect vent outputs.", 
+                val, 1350.0, "psi"
+            ))
+
+    # 4. Oil Level Evaluation
+    if "oil_level_percentage" in metrics:
+        val = float(metrics["oil_level_percentage"])
+        if val > 75.0:
+            alerts.append((
+                "Warning", 
+                "Oil level trending high — monitor for liquid carry-over into gas export line.", 
+                val, 75.0, "%"
+            ))
+
+    return alerts
+
+
 def alerts_handler(event, context):
     try:
-        print("Received DynamoDB Stream Event Batch...")
+        print("Processing DynamoDB Stream batch...")
 
-        for record in event.get('Records', []):
-            if record['eventName'] in ['INSERT', 'MODIFY']:
+        for record in event.get("Records", []):
+            if record["eventName"] not in ("INSERT", "MODIFY"):
+                continue
 
-                # 1. DESERIALIZE THE DATABASE STREAM ROW
-                dynamodb_json = record['dynamodb']['NewImage']
-                item = deserialize_image(dynamodb_json)
+            item           = deserialize_image(record["dynamodb"]["NewImage"])
+            asset_id       = item.get("raw_asset_id") or item.get("asset_id") or "UNKNOWN"
+            telemetry_type = item.get("telemetry_type", "unknown")
+            metrics        = item.get("metrics", {})
+            clean_time     = str(item.get("timestamp", "")).replace("TS#", "").strip()
 
-                asset_id = item.get("raw_asset_id") or item.get(
-                    "asset_id") or "UNKNOWN_ASSET"
-                telemetry_type = item.get("telemetry_type", "unknown")
-                metrics = item.get("metrics", {})
+            # Generate all active breaches from the payload
+            generated_alerts = evaluate_metrics(metrics)
 
-                raw_timestamp = item.get("timestamp", "Unknown Time")
-                clean_time = str(raw_timestamp).replace("TS#", "")
+            if not generated_alerts:
+                print(f"{asset_id} — normal.")
+                continue
 
-                current_value = None
-                ceiling_value = 1500.0
-                severity = "Warning"
-                message = ""
-                is_breached = False
+            # Process each alert sequentially
+            for severity, message, current_value, ceiling_value, unit in generated_alerts:
+                print(f"{severity.upper()} breach caught: {asset_id} = {current_value} {unit}")
 
-                # 2. EVALUATE METRICS WITH DUAL THRESHOLDS
-                if "wellhead_pressure_psi" in metrics:
-                    current_value = float(metrics["wellhead_pressure_psi"])
+                alert_id = str(uuid.uuid4())
 
-                    if current_value > 1500.0:
-                        is_breached = True
-                        severity = "Critical"
-                        message = "CRITICAL: Wellhead pressure breached safety ceiling — check downstream valve loops on Manifold Alpha."
-                    elif current_value > 1450.0:  # Pre-ceiling warning zone
-                        is_breached = True
-                        severity = "Warning"
-                        message = "WARNING: Wellhead pressure trending high. Monitor closely."
+                # 1. Write to DynamoDB
+                try:
+                    alerts_table.put_item(Item={
+                        "alert_id":       alert_id,
+                        "timestamp":       clean_time,
+                        "asset_id":       asset_id,
+                        "severity":       severity,
+                        "message":         message,
+                        "observed_value": str(current_value),
+                        "ceiling_value":  str(ceiling_value),
+                        "status":         "ACTIVE",
+                        "unit":           unit,
+                    })
+                    print(f"Alert [{severity}] successfully saved to DynamoDB.")
+                except Exception as e:
+                    print(f"DynamoDB write failed: {e}")
 
-                elif "manifold_pressure_psi" in metrics:
-                    current_value = float(metrics["manifold_pressure_psi"])
+                # 2. Send Notifications via SNS
+                if not SNS_TOPIC_ARN:
+                    print("ERROR: ALERT_TOPIC_SNS env var is not set — cannot send email.")
+                    continue
 
-                    if current_value > 1450.0:
-                        is_breached = True
-                        severity = "Critical"
-                        message = "CRITICAL: Manifold pressure exceeds gathering system limits — adjust pressure control regulator."
-                    elif current_value > 1400.0:
-                        is_breached = True
-                        severity = "Warning"
-                        message = "WARNING: Manifold pressure approaching high operating boundaries."
+                try:
+                    subject = f"OilWatch {severity.upper()}: {asset_id}"
+                    body = (
+                        f"OILWATCH DIGITAL OILFIELD ALARM ENGINE\n"
+                        f"=========================================\n"
+                        f"Asset:          {asset_id}\n"
+                        f"Type:           {telemetry_type.upper()}\n"
+                        f"Severity:       {severity.upper()}\n"
+                        f"Observed Value: {current_value} {unit}\n"
+                        f"Safety Ceiling: {ceiling_value} {unit}\n"
+                        f"Time:           {clean_time}\n"
+                        f"=========================================\n"
+                        f"Action Required: {message}\n"
+                    )
+                    
+                    sns_client.publish(
+                        TopicArn=SNS_TOPIC_ARN,
+                        Message=body,
+                        Subject=subject,
+                    )
+                    print(f"Notification email dispatched for {asset_id} ({severity}).")
+                except Exception as e:
+                    print(f"SNS publish failed: {e}")
 
-                elif "vessel_pressure_psi" in metrics:
-                    current_value = float(metrics["vessel_pressure_psi"])
-
-                    if current_value > 1400.0:
-                        is_breached = True
-                        severity = "Critical"
-                        message = "CRITICAL: Separator pressure approaching high operating limit — verify gas flare line valve alignment."
-                    elif current_value > 1350.0:
-                        is_breached = True
-                        severity = "Warning"
-                        message = "WARNING: Vessel pressure building up. Inspect vent outputs."
-
-                # Separate check block for fluid capacity (Evaluated independently of pressure)
-                if "oil_level_percentage" in metrics:
-                    current_level = float(metrics["oil_level_percentage"])
-                    if current_level > 75.0:
-                        is_breached = True
-                        severity = "Warning"
-                        current_value = current_level
-                        ceiling_value = 75.0
-                        message = "Oil level trending high — monitor for liquid carry-over into gas export line."
-                    current_level = float(metrics["oil_level_percentage"])
-                    if current_level > 75.0:
-                        is_breached = True
-                        severity = "Warning"
-                        current_value = current_level
-                        ceiling_value = 75.0
-                        message = "Oil level trending high — monitor for liquid carry-over into gas export line."
-
-                # 3. ALARM EXECUTION & THROTTLING LOGIC
-                if is_breached:
-                    print(f"{severity.upper()} VIOLATION detected for {asset_id}!")
-
-                    # Check DynamoDB if this asset already has an active alert to prevent spamming emails
-                    already_notified = True
-                    try:
-                        # Scan the table for any existing active alerts for this specific asset
-                        response = alerts_table.scan(
-                            FilterExpression=boto3.dynamodb.conditions.Attr('asset_id').eq(asset_id) &
-                            boto3.dynamodb.conditions.Attr(
-                                'status').eq('ACTIVE')
-                        )
-                        if response.get('Items'):
-                            already_notified = True
-                            print(
-                                f"Active alert already exists for {asset_id}. Suppressing duplicate email notification.")
-                    except Exception as scan_err:
-                        print(
-                            f"Could not check active alert states: {str(scan_err)}")
-
-                    authorizer_context = event.get(
-                        'requestContext', {}).get('authorizer', {})
-                    user_email = authorizer_context.get('claims', {}).get(
-                        'email', 'shift_supervisor@oilwatch.com')
-                    alert_id = str(uuid.uuid4())
-
-                    # A. WRITE TO DYNAMODB ALERTS TABLE (Always update table so UI stays fresh)
-                    try:
-                        alerts_table.put_item(
-                            Item={
-                                'alert_id': alert_id,
-                                'timestamp': clean_time,
-                                'asset_id': asset_id,
-                                'severity': severity,
-                                'message': message,
-                                'observed_value': str(current_value),
-                                'ceiling_value': str(ceiling_value),
-                                'status': 'ACTIVE'
-                            }
-                        )
-                        print(f"Alert record updated in DynamoDB table.")
-                    except Exception as db_err:
-                        print(
-                            f"Non-fatal database write failure: {str(db_err)}")
-
-                    # B. DISPATCH NOTIFICATION VIA SNS (Only if we haven't already emailed about it!)
-                    if SNS_TOPIC_ARN and not already_notified:
-                        try:
-                            alert_subject = f"⚠️ OilWatch ALERT: {severity} Anomaly on {asset_id}"
-                            alert_body = (
-                                f"OILWATCH DIGITAL OILFIELD ALARM ENGINE\n"
-                                f"=========================================\n"
-                                f"Asset Identifier:  {asset_id}\n"
-                                f"Asset Type:        {telemetry_type.upper()}\n"
-                                f"Severity Level:    {severity.upper()}\n"
-                                f"Observed Metric:   {current_value}\n"
-                                f"Safety Target:     {ceiling_value}\n"
-                                f"Incident Time:     {clean_time}\n"
-                                f"Assigned Operator: {user_email}\n"
-                                f"=========================================\n"
-                                f"Action Protocol:   {message}"
-                            )
-
-                            sns_client.publish(
-                                TopicArn=SNS_TOPIC_ARN,
-                                Message=alert_body,
-                                Subject=alert_subject,
-                                MessageAttributes={
-                                    'target_operator_email': {
-                                        'DataType': 'String',
-                                        'StringValue': user_email
-                                    }
-                                }
-                            )
-                            print(
-                                f"First-occurrence notification routed successfully to operator.")
-                        except Exception as sns_err:
-                            print(
-                                f"Non-fatal SNS dispatch failure: {str(sns_err)}")
-                    elif not SNS_TOPIC_ARN:
-                        print("Notification skipped: ALERT_TOPIC_SNS ARN missing.")
-                else:
-                    print(
-                        f"Telemetry for {asset_id} is within stable operational tolerances.")
-
-        return {"statusCode": 200, "body": json.dumps("Stream processing loop executed cleanly.")}
+        return {"statusCode": 200, "body": json.dumps("Done.")}
 
     except Exception as e:
-        print(f"Critical Failure inside Alert Processing Layer: {str(e)}")
-        return {"statusCode": 500, "body": json.dumps("Alert worker process failed.")}
+        print(f"Critical engine failure: {e}")
+        return {"statusCode": 500, "body": json.dumps(str(e))}
