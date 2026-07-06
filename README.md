@@ -12,7 +12,7 @@ OilWatch v2.0 simulates how a modern oil and gas production facility monitors as
 
 ## Live Demo
 
-Live Demo: https://d2fswpoy9ervv4.cloudfront.net
+Live Demo: https://oilwatch-v2.vercel.app/
 
 
 
