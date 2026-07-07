@@ -24,7 +24,7 @@ export function LoginPage({ onLoginSuccess }) {
         {/* Demo banner */}
         <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-950/40 border border-amber-800/50 mb-6">
           <span className="text-amber-400 text-[10px] font-mono tracking-wider leading-relaxed">
-             DEMO MODE — credentials are pre-filled. Just click Authorize Terminal to enter.
+            DEMO MODE — credentials are pre-filled. Just click Authorize Terminal to enter.
           </span>
         </div>
 
